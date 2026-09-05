@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Echo\Http;
 
+use Echo\Config\Config;
+use Echo\Security\TrustedProxy;
 use JsonException;
 
 final class Request
@@ -20,7 +22,7 @@ final class Request
     ) {
     }
 
-    public static function fromGlobals(int $maxBodyBytes = 150000): self
+    public static function fromGlobals(Config $config, int $maxBodyBytes = 150000): self
     {
         $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
         $uri = (string) ($_SERVER['REQUEST_URI'] ?? '/');
@@ -40,16 +42,37 @@ final class Request
             throw new RequestException(413, 'request_too_large', 'Request body is too large.');
         }
 
+        $remoteAddress = (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
         $https = strtolower((string) ($_SERVER['HTTPS'] ?? ''));
         $scheme = ($https !== '' && $https !== 'off' && $https !== '0') ? 'https' : 'http';
+        $host = strtolower(trim((string) ($_SERVER['HTTP_HOST'] ?? 'localhost')));
+        $clientIp = $remoteAddress;
+
+        $trustedProxy = new TrustedProxy($config->trustedProxies);
+        if ($trustedProxy->isTrusted($remoteAddress)) {
+            $forwardedProto = self::firstForwardedValue($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? null);
+            if ($forwardedProto !== null && in_array(strtolower($forwardedProto), ['http', 'https'], true)) {
+                $scheme = strtolower($forwardedProto);
+            }
+
+            $forwardedHost = self::firstForwardedValue($_SERVER['HTTP_X_FORWARDED_HOST'] ?? null);
+            if ($forwardedHost !== null && self::isValidHost($forwardedHost)) {
+                $host = strtolower($forwardedHost);
+            }
+
+            $forwardedFor = self::lastForwardedValue($_SERVER['HTTP_X_FORWARDED_FOR'] ?? null);
+            if ($forwardedFor !== null && filter_var($forwardedFor, FILTER_VALIDATE_IP) !== false) {
+                $clientIp = $forwardedFor;
+            }
+        }
 
         return new self(
             $method,
             $path,
             isset($_SERVER['HTTP_ORIGIN']) ? trim((string) $_SERVER['HTTP_ORIGIN']) : null,
-            strtolower(trim((string) ($_SERVER['HTTP_HOST'] ?? 'localhost'))),
+            $host,
             $scheme,
-            (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'),
+            $clientIp,
             $body,
             isset($_SERVER['CONTENT_TYPE']) ? strtolower(trim((string) $_SERVER['CONTENT_TYPE'])) : null,
         );
@@ -73,5 +96,44 @@ final class Request
         }
 
         return $decoded;
+    }
+
+    private static function firstForwardedValue(mixed $value): ?string
+    {
+        if (!is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        $first = trim(explode(',', $value, 2)[0]);
+        return $first === '' ? null : $first;
+    }
+
+    private static function lastForwardedValue(mixed $value): ?string
+    {
+        if (!is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        $parts = array_map('trim', explode(',', $value));
+        $last = end($parts);
+        return is_string($last) && $last !== '' ? $last : null;
+    }
+
+    private static function isValidHost(string $host): bool
+    {
+        if ($host === '' || str_contains($host, '/') || str_contains($host, '\\') || str_contains($host, '@')) {
+            return false;
+        }
+
+        $parts = parse_url('http://' . $host);
+        if (!is_array($parts) || !isset($parts['host'])) {
+            return false;
+        }
+
+        if (isset($parts['port']) && ((int) $parts['port'] < 1 || (int) $parts['port'] > 65535)) {
+            return false;
+        }
+
+        return true;
     }
 }

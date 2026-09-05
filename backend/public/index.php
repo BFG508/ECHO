@@ -9,55 +9,46 @@ use Echo\Http\Request;
 use Echo\Http\RequestException;
 use Echo\Http\Response;
 use Echo\Models\EchoRepository;
+use Echo\Observability\Logger;
 use Echo\Security\OriginPolicy;
 use Echo\Security\RateLimiter;
 use Echo\Security\Validator;
 
 require dirname(__DIR__) . '/src/bootstrap.php';
 
-$path = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
-$path = is_string($path) && $path !== '' ? $path : '/';
+$config = Config::fromEnvironment();
+$logger = new Logger($config->logLevel);
 
-$rawMethod = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+try {
+    $request = Request::fromGlobals($config);
 
-if ($path === '/' && $rawMethod === 'GET' && is_file(__DIR__ . '/index.html')) {
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: DENY');
     header('Referrer-Policy: no-referrer');
     header('Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()');
     header('Cross-Origin-Opener-Policy: same-origin');
     header('Cross-Origin-Resource-Policy: same-origin');
-    header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
-    header('Cache-Control: no-store, max-age=0');
-    header('Content-Type: text/html; charset=utf-8');
-    readfile(__DIR__ . '/index.html');
-    exit;
-}
-
-if (PHP_SAPI === 'cli-server' && !str_starts_with($path, '/api/')) {
-    $candidate = __DIR__ . $path;
-    if (is_file($candidate)) {
-        return false;
+    if ($config->enableHsts && $request->scheme === 'https') {
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
     }
-}
 
-$config = Config::fromEnvironment();
+    if ($request->path === '/' && $request->method === 'GET' && is_file(__DIR__ . '/index.html')) {
+        header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+        header('Cache-Control: no-store, max-age=0');
+        header('Content-Type: text/html; charset=utf-8');
+        readfile(__DIR__ . '/index.html');
+        exit;
+    }
 
-header('X-Content-Type-Options: nosniff');
-header('X-Frame-Options: DENY');
-header('Referrer-Policy: no-referrer');
-header('Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()');
-header("Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'");
-header('Cross-Origin-Opener-Policy: same-origin');
-header('Cross-Origin-Resource-Policy: same-origin');
-if ($config->enableHsts && (($_SERVER['HTTPS'] ?? '') === 'on')) {
-    header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
-}
+    if (PHP_SAPI === 'cli-server' && !str_starts_with($request->path, '/api/')) {
+        $candidate = __DIR__ . $request->path;
+        if (is_file($candidate)) {
+            return false;
+        }
+    }
 
-$corsHeaders = [];
+    header("Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'");
 
-try {
-    $request = Request::fromGlobals();
     $originPolicy = new OriginPolicy($config);
     $corsHeaders = $originPolicy->enforce($request);
 
@@ -71,7 +62,7 @@ try {
     }
 
     if ($request->method === 'GET' && $request->path === '/api/health') {
-        Response::json(200, ['status' => 'ok', 'service' => 'ECHO', 'version' => '1.0.0'], $corsHeaders);
+        Response::json(200, ['status' => 'ok', 'service' => 'ECHO', 'version' => '1.1.0'], $corsHeaders);
     }
 
     if (!str_starts_with($request->path, '/api/')) {
@@ -91,8 +82,9 @@ try {
     $controller = new EchoController(
         $config,
         new EchoRepository($pdo),
-        new RateLimiter($pdo),
+        new RateLimiter($pdo, $config->rateLimitSecret),
         new Validator($config->maxCiphertextChars),
+        $logger,
     );
 
     if ($isCreate) {
@@ -101,8 +93,9 @@ try {
 
     $controller->reveal($request, (string) $revealMatches[1], $corsHeaders);
 } catch (RequestException $exception) {
-    Response::error($exception->status, $exception->errorCode, $exception->getMessage(), $corsHeaders);
+    $logger->info('request_rejected', ['status' => $exception->status, 'code' => $exception->errorCode]);
+    Response::error($exception->status, $exception->errorCode, $exception->getMessage(), $corsHeaders ?? []);
 } catch (Throwable $exception) {
-    error_log(sprintf('[ECHO] %s: %s', $exception::class, $exception->getMessage()));
-    Response::error(500, 'internal_error', 'The server could not complete the request.', $corsHeaders);
+    $logger->error('internal_error', ['exception' => $exception::class]);
+    Response::error(500, 'internal_error', 'The server could not complete the request.', $corsHeaders ?? []);
 }

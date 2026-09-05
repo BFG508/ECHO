@@ -1,0 +1,2 @@
+# Run hourly; adjust the project path for your host installation.
+17 * * * * cd /opt/ECHO && /usr/bin/php backend/bin/cleanup.php >/dev/null 2>&1

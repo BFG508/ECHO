@@ -109,10 +109,11 @@ final class EchoRepository
         }
     }
 
-    public function deleteExpired(int $now): void
+    public function deleteExpired(int $now): int
     {
         $statement = $this->pdo->prepare('DELETE FROM echoes WHERE expires_at <= :now');
         $statement->execute([':now' => $now]);
+        return $statement->rowCount();
     }
 
     private function deleteById(string $id): void

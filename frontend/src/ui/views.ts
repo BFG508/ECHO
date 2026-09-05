@@ -10,6 +10,8 @@ import {
 } from '../crypto/echoCrypto.js';
 import type { ShareSecrets } from '../types/echo.js';
 import { clear, copyText, element, setBusy } from './dom.js';
+import { renderQr } from './qr.js';
+import { startCountdown } from './time.js';
 
 const EXPIRATIONS = new Map<number, string>([
   [300, '5 minutes'],
@@ -39,6 +41,23 @@ function buildShareUrl(secrets: ShareSecrets): string {
   url.search = '';
   url.hash = formatShareFragment(secrets).slice(1);
   return url.toString();
+}
+
+function focusView(root: HTMLElement): void {
+  window.requestAnimationFrame(() => root.focus({ preventScroll: true }));
+}
+
+function securityBadges(burn: boolean, expiresAt: number): HTMLElement {
+  const list = element('div', 'badges');
+  const encrypted = element('span', 'badge', '🔐 256-bit local secret');
+  const burnBadge = element('span', 'badge', burn ? '🔥 One-time reveal' : '♻️ Reusable until expiry');
+  const expiry = element('span', 'badge badge--timer');
+  expiry.append(document.createTextNode('⏱ '));
+  const countdown = element('span', '', '');
+  expiry.append(countdown);
+  startCountdown(countdown, expiresAt);
+  list.append(encrypted, burnBadge, expiry);
+  return list;
 }
 
 export function renderCreate(root: HTMLElement): void {
@@ -92,8 +111,8 @@ export function renderCreate(root: HTMLElement): void {
   burn.name = 'burn';
   const burnCopy = element('span', 'check__copy');
   burnCopy.append(
-    element('strong', '', 'Burn after reading'),
-    element('small', '', 'Delete the encrypted payload after the first authorized reveal.'),
+    element('strong', '', 'Burn after first reveal'),
+    element('small', '', 'Consume the encrypted server copy when it is successfully retrieved once.'),
   );
   burnLabel.append(burn, burnCopy);
   options.append(expiryGroup, burnLabel);
@@ -106,6 +125,7 @@ export function renderCreate(root: HTMLElement): void {
   form.append(label, textarea, meter, options, submit, status);
   shell.append(eyebrow, title, intro, form);
   root.append(shell, securityNotes());
+  focusView(root);
 
   const updateMeter = (): void => {
     const bytes = plaintextByteLength(textarea.value);
@@ -132,7 +152,7 @@ export function renderCreate(root: HTMLElement): void {
       setBusy(submit, true, 'Encrypting…');
       try {
         const encrypted = await encryptEcho(message);
-        await createEcho({
+        const created = await createEcho({
           id: encrypted.id,
           ciphertext: encrypted.ciphertext,
           iv: encrypted.iv,
@@ -146,7 +166,7 @@ export function renderCreate(root: HTMLElement): void {
         renderCreated(root, {
           id: encrypted.id,
           key: encrypted.key,
-        }, burn.checked, Number(select.value));
+        }, burn.checked, created.expiresAt);
       } catch (error) {
         status.append(statusBox('error', readableError(error)));
         setBusy(submit, false, '');
@@ -155,15 +175,16 @@ export function renderCreate(root: HTMLElement): void {
   });
 }
 
-function renderCreated(root: HTMLElement, secrets: ShareSecrets, burn: boolean, expirySeconds: number): void {
+function renderCreated(root: HTMLElement, secrets: ShareSecrets, burn: boolean, expiresAt: number): void {
   clear(root);
   const shell = element('section', 'card');
   shell.append(
     element('p', 'eyebrow', 'Encrypted locally'),
     element('h1', 'title', 'Your echo is ready'),
     element('p', 'lead', burn
-      ? 'This link can reveal the message once. Send it through a channel you trust.'
+      ? 'This link can retrieve the encrypted message once. Send it through a channel you trust.'
       : 'This link can be opened repeatedly until it expires.'),
+    securityBadges(burn, expiresAt),
   );
 
   const url = buildShareUrl(secrets);
@@ -191,9 +212,31 @@ function renderCreated(root: HTMLElement, secrets: ShareSecrets, burn: boolean, 
   });
   share.append(input, copy);
 
+  const actions = element('div', 'actions');
+  if (typeof navigator.share === 'function') {
+    const nativeShare = element('button', 'button button--ghost button--inline', 'Share');
+    nativeShare.type = 'button';
+    nativeShare.addEventListener('click', () => {
+      void navigator.share({ title: 'ECHO', text: 'Encrypted ECHO link', url }).catch(() => undefined);
+    });
+    actions.append(nativeShare);
+  }
+
+  const qrDetails = document.createElement('details');
+  qrDetails.className = 'qr-details';
+  const qrSummary = document.createElement('summary');
+  qrSummary.textContent = 'Show QR code';
+  const qrCopy = element('p', 'detail', 'Generated entirely in this browser. The secret is not sent anywhere to create the QR code.');
+  const canvas = document.createElement('canvas');
+  canvas.className = 'qr';
+  canvas.setAttribute('role', 'img');
+  canvas.setAttribute('aria-label', 'QR code containing the complete encrypted ECHO link');
+  renderQr(canvas, url);
+  qrDetails.append(qrSummary, qrCopy, canvas);
+
   const warning = statusBox(
     'info',
-    `The master secret lives only after the # in this link. ECHO never uploads it. Expires in ${EXPIRATIONS.get(expirySeconds) ?? 'the selected interval'}.`,
+    'The 256-bit master secret lives only after the # in this link. ECHO never uploads it. Anyone with the complete link can reveal the message.',
   );
   const another = element('button', 'button button--ghost', 'Create another echo');
   another.type = 'button';
@@ -202,8 +245,9 @@ function renderCreated(root: HTMLElement, secrets: ShareSecrets, burn: boolean, 
     renderCreate(root);
   });
 
-  shell.append(share, feedback, warning, another);
+  shell.append(share, feedback, actions, qrDetails, warning, another);
   root.append(shell, securityNotes());
+  focusView(root);
 }
 
 export function renderOpen(root: HTMLElement): void {
@@ -225,13 +269,14 @@ export function renderOpen(root: HTMLElement): void {
     });
     shell.append(home);
     root.append(shell);
+    focusView(root);
     return;
   }
 
   shell.append(
     element('p', 'eyebrow', 'Encrypted echo'),
     element('h1', 'title', 'A private message is waiting'),
-    element('p', 'lead', 'Nothing is fetched until you choose to reveal it. This avoids consuming one-time messages through link previews.'),
+    element('p', 'lead', 'Nothing is fetched until you choose to reveal it. This avoids consuming one-time messages through ordinary link previews.'),
   );
 
   const reveal = element('button', 'button button--primary button--wide', 'Reveal echo');
@@ -240,6 +285,7 @@ export function renderOpen(root: HTMLElement): void {
   status.setAttribute('aria-live', 'polite');
   shell.append(reveal, status);
   root.append(shell, securityNotes());
+  focusView(root);
 
   reveal.addEventListener('click', () => {
     void (async () => {
@@ -263,23 +309,48 @@ function renderMessage(root: HTMLElement, message: string, burned: boolean, expi
   clear(root);
   const shell = element('section', 'card');
   shell.append(
-    element('p', 'eyebrow', burned ? 'Opened and burned' : 'Decrypted locally'),
+    element('p', 'eyebrow', burned ? 'Retrieved and burned' : 'Decrypted locally'),
     element('h1', 'title', 'The echo says'),
   );
   const messageBox = element('pre', 'message');
   messageBox.textContent = message;
+
+  const buttons = element('div', 'actions');
+  const copy = element('button', 'button button--primary', 'Copy message');
+  copy.type = 'button';
+  const copyStatus = element('div', 'status-slot');
+  copyStatus.setAttribute('aria-live', 'polite');
+  copy.addEventListener('click', () => {
+    void (async () => {
+      try {
+        await copyText(message);
+        copyStatus.replaceChildren(statusBox('success', 'Message copied. Clipboard history is outside ECHO’s security boundary.'));
+      } catch {
+        copyStatus.replaceChildren(statusBox('info', 'Copy the message manually.'));
+      }
+    })();
+  });
+  buttons.append(copy);
+
   const detail = element(
     'p',
     'detail',
     burned
-      ? 'The encrypted server copy was deleted as part of this reveal.'
-      : `The encrypted server copy remains available until ${new Date(expiresAt * 1000).toLocaleString()}.`,
+      ? 'The encrypted server copy was consumed as part of this successful retrieval. ECHO cannot prove that a human actually read the plaintext.'
+      : 'The encrypted server copy remains available until it expires.',
   );
+  if (!burned) {
+    const countdown = element('strong', 'countdown');
+    startCountdown(countdown, expiresAt);
+    detail.append(document.createTextNode(' Remaining: '), countdown, document.createTextNode('.'));
+  }
+
   const home = element('button', 'button button--ghost', 'Create your own echo');
   home.type = 'button';
   home.addEventListener('click', () => renderCreate(root));
-  shell.append(messageBox, detail, home);
+  shell.append(messageBox, buttons, copyStatus, detail, home);
   root.append(shell, securityNotes());
+  focusView(root);
 }
 
 function securityNotes(): HTMLElement {
@@ -287,7 +358,7 @@ function securityNotes(): HTMLElement {
   notes.append(
     element('h2', 'notes__title', 'What ECHO can and cannot protect'),
     element('p', '', 'AES-256-GCM encryption happens in your browser. The server receives the encrypted payload, an opaque identifier, expiry settings, and only a one-way hash of an HKDF-derived access proof.'),
-    element('p', '', 'Anyone with the complete share link can read the message. Protect the link itself, use HTTPS in production, and remember that a compromised browser or device can expose plaintext.'),
+    element('p', '', 'Anyone with the complete share link can read the message. Protect the link itself, use HTTPS in production, and remember that a compromised browser, server-delivered JavaScript, device, screenshot, or clipboard can expose plaintext.'),
   );
   return notes;
 }

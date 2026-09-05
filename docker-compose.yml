@@ -6,9 +6,22 @@ services:
     environment:
       ECHO_APP_ENV: production
       ECHO_DSN: sqlite:/var/lib/echo/echo.sqlite
-      ECHO_ENABLE_HSTS: "false"
+      ECHO_RATE_LIMIT_SECRET: ${ECHO_RATE_LIMIT_SECRET:-prototype-only-change-this-rate-limit-secret-before-public-use}
+      ECHO_TRUSTED_PROXIES: ${ECHO_TRUSTED_PROXIES:-}
+      ECHO_ENABLE_HSTS: ${ECHO_ENABLE_HSTS:-false}
+      ECHO_LOG_LEVEL: ${ECHO_LOG_LEVEL:-info}
     volumes:
       - echo-data:/var/lib/echo
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+      - /var/run/apache2:size=1m,mode=0755
+      - /var/lock/apache2:size=1m,mode=0755
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 256m
+    cpus: 1.0
     restart: unless-stopped
 
 volumes:

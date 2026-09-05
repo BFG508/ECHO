@@ -1,0 +1,5 @@
+# Example HTTPS reverse proxy for a host-installed Caddy instance.
+# Set ECHO_TRUSTED_PROXIES=127.0.0.1 when Caddy connects from loopback.
+echo.example.com {
+    reverse_proxy 127.0.0.1:8080
+}

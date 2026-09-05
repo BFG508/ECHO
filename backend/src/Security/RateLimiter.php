@@ -9,13 +9,15 @@ use Throwable;
 
 final class RateLimiter
 {
-    public function __construct(private readonly PDO $pdo)
-    {
+    public function __construct(
+        private readonly PDO $pdo,
+        private readonly string $secret,
+    ) {
     }
 
     public function consume(string $bucket, string $identity, int $limit, int $windowSeconds, int $now): RateLimitResult
     {
-        $identityHash = hash('sha256', $identity);
+        $identityHash = hash_hmac('sha256', $identity, $this->secret);
         $this->pdo->exec('BEGIN IMMEDIATE');
 
         try {
@@ -38,7 +40,7 @@ final class RateLimiter
                     ':identity_hash' => $identityHash,
                     ':window_start' => $now,
                 ]);
-                $this->cleanup($now - 86400);
+                $this->cleanupExpired($now - 86400);
                 $this->pdo->exec('COMMIT');
                 return new RateLimitResult(true, 0);
             }
@@ -68,9 +70,10 @@ final class RateLimiter
         }
     }
 
-    private function cleanup(int $before): void
+    public function cleanupExpired(int $before): int
     {
         $statement = $this->pdo->prepare('DELETE FROM rate_limits WHERE window_start < :before');
         $statement->execute([':before' => $before]);
+        return $statement->rowCount();
     }
 }

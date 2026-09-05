@@ -1,0 +1,10 @@
+.git
+.github
+frontend/node_modules
+frontend/.npm
+backend/var
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.zip
+.DS_Store

@@ -227,3 +227,60 @@ button, select { -webkit-tap-highlight-color: transparent; }
   .brand__mark { background: var(--text); color: var(--bg); }
   .button--primary { color: #0d1712; }
 }
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -12px 0 24px;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: var(--surface-strong);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+.button--inline { margin-top: 0; }
+.qr-details {
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-strong);
+  padding: 14px 16px;
+}
+.qr-details summary {
+  cursor: pointer;
+  font-weight: 760;
+}
+.qr {
+  display: block;
+  max-width: 100%;
+  height: auto !important;
+  margin: 14px auto 4px;
+  border: 8px solid #fff;
+  border-radius: 10px;
+}
+.countdown { color: var(--text); }
+
+.button:focus-visible,
+.textarea:focus-visible,
+.select:focus-visible,
+.share__input:focus-visible,
+.check:has(input:focus-visible),
+.qr-details summary:focus-visible,
+.brand:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
