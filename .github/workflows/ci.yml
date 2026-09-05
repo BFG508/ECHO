@@ -49,8 +49,8 @@ jobs:
       - name: Build frontend
         working-directory: frontend
         run: npm ci --no-audit --no-fund && npm run build
-      - name: Install Playwright 1.63.0
-        run: pip install 'playwright==1.63.0'
+      - name: Install Playwright 1.62.0
+        run: pip install 'playwright==1.62.0'
       - name: Install Playwright browsers
         run: python -m playwright install --with-deps chromium firefox webkit
       - name: Cross-browser E2E and accessibility smoke tests

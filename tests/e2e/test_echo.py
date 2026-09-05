@@ -17,7 +17,12 @@ import unittest
 from pathlib import Path
 from urllib.request import urlopen
 
-from playwright.sync_api import BrowserType, Page, sync_playwright
+from playwright.sync_api import (
+    BrowserType,
+    Page,
+    TimeoutError as PlaywrightTimeoutError,
+    sync_playwright,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 HOST = "127.0.0.1"
@@ -47,8 +52,16 @@ def wait_for_server(timeout: float = 10.0) -> None:
     raise RuntimeError("ECHO test server did not become ready")
 
 
+def goto_with_retry(page: Page, url: str) -> None:
+    """Navigate with one retry for the Playwright/Firefox 1.62 goto flake."""
+    try:
+        page.goto(url, wait_until="load", timeout=10_000)
+    except PlaywrightTimeoutError:
+        page.goto(url, wait_until="load", timeout=10_000)
+
+
 def create_echo(page: Page, message: str, burn: bool = True) -> str:
-    page.goto(BASE_URL)
+    goto_with_retry(page, BASE_URL)
     page.get_by_label("Message").fill(message)
     checkbox = page.get_by_role("checkbox", name="Burn after first reveal")
     if burn:
@@ -57,11 +70,11 @@ def create_echo(page: Page, message: str, burn: bool = True) -> str:
         checkbox.uncheck()
     page.get_by_role("button", name="Create encrypted link").click()
     page.get_by_role("heading", name="Your echo is ready").wait_for()
-    return page.get_by_label("Encrypted echo link").input_value()
+    return page.get_by_role("textbox", name="Encrypted echo link", exact=True).input_value()
 
 
 def reveal(page: Page, link: str) -> None:
-    page.goto(link)
+    goto_with_retry(page, link)
     page.get_by_role("button", name="Reveal echo").click()
 
 
@@ -173,7 +186,7 @@ class EchoE2E(unittest.TestCase):
         browser = self.playwright.chromium.launch()
         try:
             page = browser.new_page()
-            page.goto(BASE_URL)
+            goto_with_retry(page, BASE_URL)
             page.get_by_role("heading", name="Send an echo").wait_for()
             active_tag = page.evaluate("document.activeElement?.id")
             self.assertEqual(active_tag, "app")
@@ -193,7 +206,7 @@ class EchoE2E(unittest.TestCase):
         browser = self.playwright.chromium.launch()
         try:
             page = browser.new_page()
-            page.goto(f"{BASE_URL}/#/open/not-valid")
+            goto_with_retry(page, f"{BASE_URL}/#/open/not-valid")
             page.get_by_role("heading", name="This echo link is malformed").wait_for()
             self.assertEqual(page.locator("pre.message").count(), 0)
         finally:
