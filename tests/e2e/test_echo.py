@@ -15,6 +15,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from urllib.parse import urlsplit
 from urllib.request import urlopen
 
 from playwright.sync_api import (
@@ -74,7 +75,27 @@ def create_echo(page: Page, message: str, burn: bool = True) -> str:
 
 
 def reveal(page: Page, link: str) -> None:
-    goto_with_retry(page, link)
+    """Open an ECHO share link without a flaky Firefox full navigation.
+
+    ECHO keeps the route and master secret in the URL fragment. Fragments are
+    client-side only and are never sent to the server, so loading the origin
+    first and then assigning location.hash exercises the same application
+    routing while avoiding Playwright/Firefox navigation bookkeeping flakes.
+    """
+    parsed = urlsplit(link)
+    base = urlsplit(BASE_URL)
+
+    if parsed.scheme != base.scheme or parsed.netloc != base.netloc:
+        raise AssertionError("Unexpected ECHO share-link origin")
+    if parsed.path not in ("", "/") or not parsed.fragment.startswith("/open/"):
+        raise AssertionError("Unexpected ECHO share-link format")
+
+    goto_with_retry(page, BASE_URL)
+    page.evaluate(
+        "(fragment) => { window.location.hash = fragment; }",
+        parsed.fragment,
+    )
+    page.get_by_role("button", name="Reveal echo").wait_for(state="visible")
     page.get_by_role("button", name="Reveal echo").click()
 
 

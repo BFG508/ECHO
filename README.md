@@ -1,7 +1,7 @@
 # E.C.H.O. 🔐
 **E**phemeral **C**ryptographic **H**andoff **O**nline
 
-A lightweight, self-hostable prototype for securely sharing end-to-end encrypted, expiring messages. ECHO encrypts and decrypts entirely in the browser, so the backend stores ciphertext while the 256-bit master secret remains only in the shared URL fragment and is never transmitted to the server.
+A lightweight, self-hostable prototype for securely sharing end-to-end encrypted, expiring messages. **Version 1.1.1 is the final prototype release.** ECHO encrypts and decrypts entirely in the browser, so the backend stores ciphertext while the 256-bit master secret remains only in the shared URL fragment and is never transmitted to the server.
 
 ## 🚀 Core Features
 ### 1. End-to-End Client-Side Encryption

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.1 — Final Prototype
+
+- Final CI/E2E stabilization with Python Playwright pinned to the published 1.62.0 release.
+- Made the encrypted-link E2E locator role-specific and exact to avoid ambiguity with the local QR canvas.
+- Added a narrowly scoped Firefox navigation retry for the Playwright 1.62 navigation flake, waiting for `load` before interaction.
+- Synchronized application, frontend package, health endpoint, and release version metadata at 1.1.1.
+- No new product features: this release closes the prototype validation phase.
+
 ## 1.1.0 — Prototype hardening
 
 - HMAC-SHA-256 pseudonymization for rate-limit identities.

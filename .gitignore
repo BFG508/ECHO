@@ -20,3 +20,45 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python test/tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.pytype/
+.hypothesis/
+
+# Coverage
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Playwright / E2E artifacts
+playwright-report/
+test-results/
+
+# OS/editor temporary files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
