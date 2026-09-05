@@ -1,0 +1,5 @@
+# Defense in depth: the Apache DocumentRoot must be backend/public, never backend/.
+Options -Indexes
+<FilesMatch "\.(?:php|json|sql|env)$">
+    Require all denied
+</FilesMatch>

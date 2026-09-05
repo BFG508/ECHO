@@ -1,0 +1,15 @@
+services:
+  echo:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      ECHO_APP_ENV: production
+      ECHO_DSN: sqlite:/var/lib/echo/echo.sqlite
+      ECHO_ENABLE_HSTS: "false"
+    volumes:
+      - echo-data:/var/lib/echo
+    restart: unless-stopped
+
+volumes:
+  echo-data:

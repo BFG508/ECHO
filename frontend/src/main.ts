@@ -1,0 +1,18 @@
+import { renderCreate, renderOpen } from './ui/views.js';
+
+const root = document.querySelector<HTMLElement>('#app');
+if (root === null) {
+  throw new Error('ECHO root element is missing.');
+}
+const appRoot: HTMLElement = root;
+
+function route(): void {
+  if (window.location.hash.startsWith('#/open/')) {
+    renderOpen(appRoot);
+  } else {
+    renderCreate(appRoot);
+  }
+}
+
+window.addEventListener('hashchange', route);
+route();

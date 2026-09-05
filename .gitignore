@@ -1,0 +1,22 @@
+# Environment / secrets
+.env
+backend/.env
+
+# Runtime data
+backend/var/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# Frontend dependencies / caches
+frontend/node_modules/
+frontend/.tsbuildinfo
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Logs
+*.log
