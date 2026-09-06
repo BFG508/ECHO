@@ -1,0 +1,59 @@
+name: PER and Red Team
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: per-red-team-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  per-coding-style:
+    name: PER Coding Style
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Show PHP and Composer versions
+        run: |
+          php --version
+          composer --version
+
+      - name: Install pinned PHP CS Fixer
+        run: |
+          composer global require --no-interaction --no-progress \
+            friendsofphp/php-cs-fixer:3.95.24
+          echo "$(composer global config bin-dir --absolute)" >> "$GITHUB_PATH"
+
+      - name: Enforce PHP-FIG PER Coding Style
+        working-directory: backend
+        run: |
+          php-cs-fixer fix \
+            --dry-run \
+            --diff \
+            --verbose \
+            --using-cache=no \
+            --config=../.php-cs-fixer.dist.php
+
+  red-team-regressions:
+    name: Red Team regressions (XSS and SQLi)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Show Python version
+        run: python3 --version
+
+      - name: Run explicit XSS and SQLi regression tests
+        run: |
+          python3 -m unittest discover \
+            -s tests/red_team \
+            -p 'test_*.py' \
+            -v

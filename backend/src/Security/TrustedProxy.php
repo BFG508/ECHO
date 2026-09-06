@@ -7,9 +7,7 @@ namespace Echo\Security;
 final class TrustedProxy
 {
     /** @param list<string> $trustedRanges */
-    public function __construct(private readonly array $trustedRanges)
-    {
-    }
+    public function __construct(private readonly array $trustedRanges) {}
 
     public function isTrusted(string $address): bool
     {

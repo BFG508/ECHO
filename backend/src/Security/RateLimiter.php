@@ -12,8 +12,7 @@ final class RateLimiter
     public function __construct(
         private readonly PDO $pdo,
         private readonly string $secret,
-    ) {
-    }
+    ) {}
 
     public function consume(string $bucket, string $identity, int $limit, int $windowSeconds, int $now): RateLimitResult
     {
@@ -23,7 +22,7 @@ final class RateLimiter
         try {
             $select = $this->pdo->prepare(
                 'SELECT window_start, request_count FROM rate_limits '
-                . 'WHERE bucket = :bucket AND identity_hash = :identity_hash'
+                . 'WHERE bucket = :bucket AND identity_hash = :identity_hash',
             );
             $select->execute([':bucket' => $bucket, ':identity_hash' => $identityHash]);
             $row = $select->fetch();
@@ -33,7 +32,7 @@ final class RateLimiter
                     'INSERT INTO rate_limits (bucket, identity_hash, window_start, request_count) '
                     . 'VALUES (:bucket, :identity_hash, :window_start, 1) '
                     . 'ON CONFLICT(bucket, identity_hash) DO UPDATE SET '
-                    . 'window_start = excluded.window_start, request_count = 1'
+                    . 'window_start = excluded.window_start, request_count = 1',
                 );
                 $upsert->execute([
                     ':bucket' => $bucket,
@@ -55,7 +54,7 @@ final class RateLimiter
 
             $update = $this->pdo->prepare(
                 'UPDATE rate_limits SET request_count = request_count + 1 '
-                . 'WHERE bucket = :bucket AND identity_hash = :identity_hash'
+                . 'WHERE bucket = :bucket AND identity_hash = :identity_hash',
             );
             $update->execute([':bucket' => $bucket, ':identity_hash' => $identityHash]);
             $this->pdo->exec('COMMIT');

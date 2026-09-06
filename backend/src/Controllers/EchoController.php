@@ -21,8 +21,7 @@ final class EchoController
         private readonly RateLimiter $rateLimiter,
         private readonly Validator $validator,
         private readonly Logger $logger,
-    ) {
-    }
+    ) {}
 
     /** @param array<string, string> $corsHeaders */
     public function create(Request $request, array $corsHeaders): never

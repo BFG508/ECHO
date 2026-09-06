@@ -64,23 +64,23 @@ $valid = [
     'expiresInSeconds' => 3600,
 ];
 check($validator->createEcho($valid)['expiresInSeconds'] === 3600, 'valid create payload is accepted');
-expectRequestException(fn () => $validator->createEcho($valid + ['extra' => 1]), 400, 'unexpected create field is rejected');
+expectRequestException(fn() => $validator->createEcho($valid + ['extra' => 1]), 400, 'unexpected create field is rejected');
 $badExpiry = $valid;
 $badExpiry['expiresInSeconds'] = 42;
-expectRequestException(fn () => $validator->createEcho($badExpiry), 400, 'unsupported expiry is rejected');
+expectRequestException(fn() => $validator->createEcho($badExpiry), 400, 'unsupported expiry is rejected');
 $badBurn = $valid;
 $badBurn['burnAfterReading'] = 1;
-expectRequestException(fn () => $validator->createEcho($badBurn), 400, 'non-boolean burn flag is rejected');
-expectRequestException(fn () => $validator->echoId('../etc/passwd'), 404, 'invalid echo id is hidden as not found');
+expectRequestException(fn() => $validator->createEcho($badBurn), 400, 'non-boolean burn flag is rejected');
+expectRequestException(fn() => $validator->echoId('../etc/passwd'), 404, 'invalid echo id is hidden as not found');
 
 $fuzzValues = [null, true, false, 0, 1, -1, 1.5, [], ['nested'], new stdClass()];
 foreach ($fuzzValues as $index => $value) {
     $payload = $valid;
     $payload['expiresInSeconds'] = $value;
-    expectRequestException(fn () => $validator->createEcho($payload), 400, "fuzz expiry value {$index} is rejected");
+    expectRequestException(fn() => $validator->createEcho($payload), 400, "fuzz expiry value {$index} is rejected");
 }
 foreach (['', '../etc/passwd', '<script>', str_repeat('A', 1000), 'AA AA', '🔥'] as $index => $id) {
-    expectRequestException(fn () => $validator->echoId($id), 404, "fuzz id {$index} is rejected");
+    expectRequestException(fn() => $validator->echoId($id), 404, "fuzz id {$index} is rejected");
 }
 
 $config = configForTests();
@@ -92,7 +92,7 @@ check(($originPolicy->enforce($sameOriginRequest)['Access-Control-Allow-Origin']
 $configuredOriginRequest = new Request('POST', '/api/echoes', 'https://example.org', 'echo.test', 'https', '127.0.0.1', '{}', 'application/json');
 check(($originPolicy->enforce($configuredOriginRequest)['Access-Control-Allow-Origin'] ?? null) === 'https://example.org', 'configured extra origin is allowed');
 $wrongPortRequest = new Request('POST', '/api/echoes', 'https://echo.test:444', 'echo.test', 'https', '127.0.0.1', '{}', 'application/json');
-expectRequestException(fn () => $originPolicy->enforce($wrongPortRequest), 403, 'same host on a different port is rejected');
+expectRequestException(fn() => $originPolicy->enforce($wrongPortRequest), 403, 'same host on a different port is rejected');
 
 $trustedProxy = new TrustedProxy($config->trustedProxies);
 check($trustedProxy->isTrusted('127.0.0.1'), 'exact trusted proxy IP matches');

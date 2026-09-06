@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.2 — Stable Prototype
+
+- Added blocking PER Coding Style enforcement for PHP in CI.
+- Added explicit Red Team regression tests for XSS and SQL injection, including hostile payload corpora.
+- Added `CONTRIBUTING.md` with coding, security, testing, and pull-request requirements.
+- Refined the SQL injection regression test to allow trusted local schema execution while continuing to reject user-controlled SQL construction.
+- Synchronized README, application, frontend package, health endpoint, and release version metadata at 1.1.2.
+- No product or cryptographic behavior changes: this release establishes and freezes the stable prototype baseline.
+
 ## 1.1.1 — Final Prototype
 
 - Final CI/E2E stabilization with Python Playwright pinned to the published 1.62.0 release.

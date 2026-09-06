@@ -10,9 +10,7 @@ use Throwable;
 
 final class EchoRepository
 {
-    public function __construct(private readonly PDO $pdo)
-    {
-    }
+    public function __construct(private readonly PDO $pdo) {}
 
     public function create(
         string $id,
@@ -65,7 +63,7 @@ final class EchoRepository
 
             $statement = $this->pdo->prepare(
                 'SELECT ciphertext, iv, access_token_hash, burn_after_reading, created_at, expires_at '
-                . 'FROM echoes WHERE id = :id LIMIT 1'
+                . 'FROM echoes WHERE id = :id LIMIT 1',
             );
             $statement->execute([':id' => $id]);
             $row = $statement->fetch();
@@ -92,7 +90,7 @@ final class EchoRepository
                 $this->deleteById($id);
             } else {
                 $update = $this->pdo->prepare(
-                    'UPDATE echoes SET read_count = read_count + 1, last_read_at = :now WHERE id = :id'
+                    'UPDATE echoes SET read_count = read_count + 1, last_read_at = :now WHERE id = :id',
                 );
                 $update->execute([':now' => $now, ':id' => $id]);
             }

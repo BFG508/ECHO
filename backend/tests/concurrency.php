@@ -25,8 +25,17 @@ if ($database === false) {
 @unlink($database);
 $dsn = 'sqlite:' . $database;
 $config = new Config(
-    'test', $dsn, [], [], 'race-test-secret-at-least-32-bytes',
-    1000, 1000, 60, 100000, false, 'off'
+    'test',
+    $dsn,
+    [],
+    [],
+    'race-test-secret-at-least-32-bytes',
+    1000,
+    1000,
+    60,
+    100000,
+    false,
+    'off',
 );
 $pdo = Database::connect($config);
 $repo = new EchoRepository($pdo);

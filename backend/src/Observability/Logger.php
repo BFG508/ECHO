@@ -8,9 +8,7 @@ use JsonException;
 
 final class Logger
 {
-    public function __construct(private readonly string $level)
-    {
-    }
+    public function __construct(private readonly string $level) {}
 
     /** @param array<string, bool|int|float|string|null> $context */
     public function info(string $event, array $context = []): void

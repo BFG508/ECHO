@@ -10,9 +10,7 @@ use Echo\Http\RequestException;
 
 final class OriginPolicy
 {
-    public function __construct(private readonly Config $config)
-    {
-    }
+    public function __construct(private readonly Config $config) {}
 
     /** @return array<string, string> */
     public function enforce(Request $request): array

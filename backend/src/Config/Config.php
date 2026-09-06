@@ -35,7 +35,7 @@ final class Config
         $environment = self::env('ECHO_APP_ENV', 'production');
         $rateLimitSecret = self::env(
             'ECHO_RATE_LIMIT_SECRET',
-            'echo-prototype-rate-limit-secret-change-me-before-public-deployment'
+            'echo-prototype-rate-limit-secret-change-me-before-public-deployment',
         );
 
         return new self(
@@ -88,12 +88,12 @@ final class Config
                 $value = trim($value);
                 return $trimTrailingSlash ? rtrim($value, '/') : $value;
             },
-            $values
+            $values,
         );
 
         return array_values(array_unique(array_filter(
             $normalized,
-            static fn (string $value): bool => $value !== ''
+            static fn(string $value): bool => $value !== '',
         )));
     }
 

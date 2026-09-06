@@ -19,8 +19,7 @@ final class Request
         public readonly string $clientIp,
         private readonly string $rawBody,
         public readonly ?string $contentType,
-    ) {
-    }
+    ) {}
 
     public static function fromGlobals(Config $config, int $maxBodyBytes = 150000): self
     {

@@ -57,8 +57,9 @@ playwright-report/
 test-results/
 
 # OS/editor temporary files
-.DS_Store
-Thumbs.db
 *.swp
 *.swo
 *~
+
+# Generated frontend assets
+frontend/public/assets/

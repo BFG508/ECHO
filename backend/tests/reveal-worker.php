@@ -14,8 +14,17 @@ if ($argc !== 5) {
 }
 
 $config = new Config(
-    'test', $argv[1], [], [], 'race-test-secret-at-least-32-bytes',
-    1000, 1000, 60, 100000, false, 'off'
+    'test',
+    $argv[1],
+    [],
+    [],
+    'race-test-secret-at-least-32-bytes',
+    1000,
+    1000,
+    60,
+    100000,
+    false,
+    'off',
 );
 $payload = (new EchoRepository(Database::connect($config)))->reveal($argv[2], $argv[3], (int) $argv[4]);
 fwrite(STDOUT, $payload === null ? "0\n" : "1\n");

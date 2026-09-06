@@ -12,8 +12,7 @@ final class EchoPayload
         public readonly bool $burnAfterReading,
         public readonly int $createdAt,
         public readonly int $expiresAt,
-    ) {
-    }
+    ) {}
 
     /** @return array<string, int|string|bool> */
     public function toArray(): array

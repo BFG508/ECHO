@@ -62,7 +62,7 @@ try {
     }
 
     if ($request->method === 'GET' && $request->path === '/api/health') {
-        Response::json(200, ['status' => 'ok', 'service' => 'ECHO', 'version' => '1.1.1'], $corsHeaders);
+        Response::json(200, ['status' => 'ok', 'service' => 'ECHO', 'version' => '1.1.2'], $corsHeaders);
     }
 
     if (!str_starts_with($request->path, '/api/')) {

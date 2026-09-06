@@ -10,9 +10,7 @@ final class Validator
 {
     public const EXPIRATIONS = [300, 3600, 86400, 604800];
 
-    public function __construct(private readonly int $maxCiphertextChars)
-    {
-    }
+    public function __construct(private readonly int $maxCiphertextChars) {}
 
     /**
      * @param array<string, mixed> $body

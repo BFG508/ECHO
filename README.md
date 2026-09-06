@@ -1,7 +1,7 @@
 # E.C.H.O. 🔐
 **E**phemeral **C**ryptographic **H**andoff **O**nline
 
-A lightweight, self-hostable prototype for securely sharing end-to-end encrypted, expiring messages. **Version 1.1.1 is the final prototype release.** ECHO encrypts and decrypts entirely in the browser, so the backend stores ciphertext while the 256-bit master secret remains only in the shared URL fragment and is never transmitted to the server.
+A lightweight, self-hostable prototype for securely sharing end-to-end encrypted, expiring messages. **Version 1.1.2 is the stable prototype release.** ECHO encrypts and decrypts entirely in the browser, so the backend stores ciphertext while the 256-bit master secret remains only in the shared URL fragment and is never transmitted to the server.
 
 ## 🚀 Core Features
 ### 1. End-to-End Client-Side Encryption
@@ -25,6 +25,8 @@ A lightweight, self-hostable prototype for securely sharing end-to-end encrypted
 * **Concurrency Test:** A dedicated integration test starts 50 simultaneous attempts to reveal one one-time echo and requires exactly one success.
 * **Cryptographic Property Tests:** Randomized Unicode round trips and tamper tests cover altered keys, IDs, IVs, and ciphertexts.
 * **API Fuzz Checks:** The backend test suite exercises invalid scalar types, malformed identifiers, unexpected fields, limits, origins, and proxy CIDRs.
+* **Explicit Red Team Regressions:** Dedicated XSS and SQL injection regression tests exercise hostile payload corpora and fail CI if unsafe DOM sinks or user-controlled SQL construction are introduced.
+* **PER Coding Style Enforcement:** PHP formatting is enforced in CI against PER Coding Style so future changes cannot silently drift from the project coding standard.
 * **Cross-Browser E2E:** Playwright tests cover Chromium, Firefox, and WebKit for creation, one-time reveal, reusable reveal, malformed links, QR rendering, keyboard focus, and basic accessibility semantics.
 
 ### 5. Practical Self-Hosted UX
